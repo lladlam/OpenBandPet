@@ -1,0 +1,258 @@
+<template>
+  <div class="page-container">
+    <div class="page-header-container">
+      <div class="page-header">
+        <image src="../common/back.png" class="page-header-back-button" onclick="goBack"></image>
+        <div class="header-title-time">
+          <text class="page-time-display">{{ time }}</text>
+          <text class="page-header-title">更多选项</text>
+        </div>
+      </div>
+    </div>
+    <div class="page-content">
+      <div class="settings-list">
+        <!-- 震动开关 -->
+        <div class="setting-item">
+          <text class="setting-label">点击震动</text>
+          <switch 
+            checked="{{ vibrationEnabled }}" 
+            class="vibration-switch"
+            @change="onVibrationChange">
+          </switch>
+        </div>
+        
+        <!-- 震动说明 -->
+        <div class="setting-description">
+          <text class="description-text">开启后，点击宠物时会有轻微震动反馈</text>
+        </div>
+        
+        <!-- 检查更新按钮 -->
+        <div class="update-button" onclick="checkUpdate">
+          <text class="update-button-text">检查更新</text>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style>
+  .page-container {
+    flex-direction: column;
+    align-items: center;
+    background-color: #000000;
+    width: 100%;
+    height: 100%;
+  }
+  .page-header-container {
+    width: 100%;
+    margin-bottom: 20px;
+  }
+  .page-time-display {
+    color: #FFFFFF;
+    font-size: 24px;
+    margin-bottom: 2px;
+  }
+  .page-header {
+    width: 100%;
+    height: 90px;
+    padding: 0 20px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .page-header-back-button {
+    width: 80px;
+    height: 80px;
+    position: absolute;
+    left: 0px;
+  }
+  .page-header-title {
+    color: #FFFFFF;
+    font-size: 32px;
+  }
+  .header-title-time {
+    flex-direction: column;
+    align-items: center;
+  }
+  .page-content {
+    flex-direction: column;
+    width: 100%;
+    flex: 1;
+    align-items: center;
+    overflow-y: scroll;
+  }
+  .settings-list {
+    flex-direction: column;
+    width: 90%;
+  }
+  .setting-item {
+    width: 100%;
+    height: 80px;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    background-color: #1A1A1A;
+    border-radius: 15px;
+    margin-bottom: 10px;
+  }
+  .setting-label {
+    color: #FFFFFF;
+    font-size: 30px;
+  }
+  .vibration-switch {
+    width: 80px;
+    height: 40px;
+    track-color: #4CD964;
+    thumb-color: #FFFFFF;
+  }
+  .setting-description {
+    width: 100%;
+    padding: 0 20px;
+    margin-bottom: 20px;
+  }
+  .description-text {
+    color: #666666;
+    font-size: 22px;
+  }
+  .update-button {
+    width: 100%;
+    height: 70px;
+    background-color: #1A1A1A;
+    border-radius: 15px;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+    margin-bottom: 20px;
+  }
+  .update-button-text {
+    color: #FFFFFF;
+    font-size: 30px;
+  }
+</style>
+
+<script>
+  import router from '@system.router';
+  import storage from '@system.storage';
+  import vibrator from '@system.vibrator';
+  import prompt from '@system.prompt';
+  import { CONFIG } from '../common/js/config.js';
+  import ApiService from '../common/js/api-service.js';
+
+  // Promisified helper for storage.get
+  const _promisifiedStorageGet = (key) => {
+    return new Promise((resolve) => {
+      storage.get({
+        key: key,
+        success: (data) => resolve(data),
+        fail: () => resolve(null)
+      });
+    });
+  };
+
+  // Promisified helper for storage.set
+  const _promisifiedStorageSet = (key, value) => {
+    return new Promise((resolve, reject) => {
+      storage.set({
+        key: key,
+        value: value,
+        success: resolve,
+        fail: (err, code) => reject(new Error(`Storage.set failed: ${err} (${code})`))
+      });
+    });
+  };
+
+  export default {
+    data: {
+      time: '00:00',
+      vibrationEnabled: true
+    },
+    
+    onInit() {
+      this.updateTime();
+      this.loadSettings();
+      setInterval(this.updateTime, 10000);
+    },
+    
+    updateTime() {
+      const now = new Date();
+      const hours = now.getHours().toString().padStart(2, '0');
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      this.time = `${hours}:${minutes}`;
+    },
+    
+    async loadSettings() {
+      try {
+        const setting = await _promisifiedStorageGet(CONFIG.STORAGE_KEYS.VIBRATION_ENABLED);
+        // 默认开启震动，只有明确设置为 'false' 时才关闭
+        this.vibrationEnabled = setting !== 'false';
+        console.log('[MoreOptions] Loaded vibration setting:', this.vibrationEnabled);
+      } catch (e) {
+        console.error('[MoreOptions] Failed to load settings:', e);
+        this.vibrationEnabled = true;
+      }
+    },
+    
+    async onVibrationChange(e) {
+      this.vibrationEnabled = e.checked;
+      
+      try {
+        await _promisifiedStorageSet(
+          CONFIG.STORAGE_KEYS.VIBRATION_ENABLED, 
+          this.vibrationEnabled.toString()
+        );
+        console.log('[MoreOptions] Saved vibration setting:', this.vibrationEnabled);
+        
+        // 开启时给用户一个震动反馈
+        if (this.vibrationEnabled) {
+          vibrator.vibrate({
+            mode: 'short'
+          });
+        }
+      } catch (e) {
+        console.error('[MoreOptions] Failed to save vibration setting:', e);
+      }
+    },
+    
+    goBack() {
+      router.back();
+    },
+    
+    // 检查更新
+    async checkUpdate() {
+      console.log('[MoreOptions] Checking for updates...');
+      
+      try {
+        prompt.showToast({
+          message: '正在检查更新...',
+          duration: 1500
+        });
+        
+        const currentVersionCode = CONFIG.APP.VERSION_CODE;
+        const result = await ApiService.checkAppUpdate(currentVersionCode);
+        
+        console.log('[MoreOptions] Update check result:', JSON.stringify(result));
+        
+        if (result.success && result.hasUpdate && result.updateInfo) {
+          const versionName = result.updateInfo.version_name || '新版本';
+          prompt.showToast({
+            message: `有新版本更新！版本号：${versionName}`,
+            duration: 2500
+          });
+        } else {
+          prompt.showToast({
+            message: '当前已是最新版本',
+            duration: 1500
+          });
+        }
+      } catch (error) {
+        console.error('[MoreOptions] Update check failed:', error);
+        prompt.showToast({
+          message: '检查更新失败',
+          duration: 1500
+        });
+      }
+    }
+  }
+</script>

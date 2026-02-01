@@ -1,0 +1,255 @@
+<template>
+  <div class="page-container">
+    <div class="page-header-container">
+      <div class="page-header">
+        <image src="../common/back.png" class="page-header-back-button" onclick="goBack"></image>
+        <div class="header-title-time">
+          <text class="page-time-display">{{ time }}</text>
+          <text class="page-header-title">设置</text>
+        </div>
+      </div>
+    </div>
+    <div class="page-content">
+      <div class="settings-content">
+        <div class="info-item">
+          <text class="info-label">您的宠物:</text>
+          <text class="info-value">{{ petName }}</text>
+        </div>
+        <div class="info-item">
+          <text class="info-label">ID:</text>
+          <text class="info-value">{{ userId }}</text>
+        </div>
+        
+        <!-- 更多选项按钮 -->
+        <div class="menu-button" onclick="goToMoreOptions">
+          <text class="menu-button-text">更多选项</text>
+        </div>
+      </div>
+    </div>
+    <div class="sync-button" onclick="handleCloudSync">
+        <text class="sync-button-text">云端同步</text>
+    </div>
+    <div class="about-button" onclick="goToAbout">
+        <text class="about-button-text">关于</text>
+    </div>
+  </div>
+</template>
+
+<style>
+  .page-container {
+    position: relative;
+    flex-direction: column;
+    align-items: center;
+    background-color: #000000;
+    width: 100%;
+    height: 100%;
+  }
+  .page-header-container {
+    width: 100%;
+    margin-bottom: 20px;
+  }
+  .page-time-display {
+    color: #FFFFFF;
+    font-size: 24px;
+    margin-bottom: 2px;
+  }
+  .page-header {
+    width: 100%;
+    height: 90px;
+    padding: 0 20px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .page-header-back-button {
+    width: 80px;
+    height: 80px;
+    position: absolute;
+    left: 0px;
+  }
+  .page-header-title {
+    color: #FFFFFF;
+    font-size: 32px;
+  }
+  .header-title-time {
+    flex-direction: column;
+    align-items: center;
+  }
+  .page-content {
+    flex-direction: column;
+    width: 100%;
+    flex: 1;
+    align-items: center;
+    overflow-y: scroll;
+  }
+  .settings-content {
+    flex-direction: column;
+    width: 90%;
+    margin-top: 10px;
+  }
+  .info-item {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 20px;
+    background-color: #1A1A1A;
+    border-radius: 15px;
+  }
+  .info-label {
+    color: #AAAAAA;
+    font-size: 30px;
+  }
+  .info-value {
+    color: #FFFFFF;
+    font-size: 30px;
+  }
+  .menu-button {
+    width: 100%;
+    height: 70px;
+    background-color: #1A1A1A;
+    border-radius: 15px;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  .menu-button-text {
+    color: #FFFFFF;
+    font-size: 30px;
+  }
+  .about-button, .sync-button {
+    position: absolute;
+    bottom: 30px;
+    width: 140px;
+    height: 60px;
+    background-color: #1A1A1A;
+    border-radius: 30px;
+    justify-content: center;
+    align-items: center;
+  }
+  .about-button {
+    right: 20px;
+  }
+  .sync-button {
+    left: 20px;
+  }
+  .about-button-text, .sync-button-text {
+    color: #FFFFFF;
+    font-size: 28px;
+  }
+</style>
+
+<script>
+  import router from '@system.router';
+  import storage from '@system.storage';
+  import prompt from '@system.prompt';
+  import { CONFIG } from '../common/js/config.js';
+  import UserService from '../common/js/userService.js';
+
+  // Promisified helper for storage.get to handle async/await correctly.
+  const _promisifiedStorageGet = (key) => {
+    return new Promise((resolve) => {
+      storage.get({
+        key: key,
+        success: (data) => resolve(data),
+        fail: () => resolve(null)
+      });
+    });
+  };
+
+  export default {
+    data: {
+      time: '00:00',
+      petName: '加载中...',
+      userId: '加载中...'
+    },
+    onInit() {
+      this.loadUserInfo();
+      this.updateTime();
+      setInterval(this.updateTime, 10000);
+    },
+    async loadUserInfo() {
+      console.log('[SettingsPage] Loading user info...');
+      try {
+        const userInfoJSON = await _promisifiedStorageGet(CONFIG.STORAGE_KEYS.USER_INFO);
+
+        if (userInfoJSON) {
+          console.log('[SettingsPage] Found user info data in storage.');
+          const userInfo = JSON.parse(userInfoJSON);
+          if (userInfo && userInfo.id) {
+            this.petName = userInfo.pet_name || '(无名)';
+            this.userId = userInfo.id || '无';
+            console.log(`[SettingsPage] Successfully loaded user info: Name='${this.petName}', ID='${this.userId}'`);
+          } else {
+            console.warn('[SettingsPage] User info data was found, but it was invalid (missing id).');
+            this.petName = '信息无效';
+            this.userId = '无';
+          }
+        } else {
+            console.warn('[SettingsPage] Could not find user info in storage.');
+            this.petName = '无信息';
+            this.userId = '无';
+        }
+      } catch (e) {
+        console.error("[SettingsPage] A critical error occurred while loading user info:", e);
+        this.petName = '加载失败';
+        this.userId = '加载失败';
+      }
+    },
+    updateTime() {
+      const now = new Date();
+      const hours = now.getHours().toString().padStart(2, '0');
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      this.time = `${hours}:${minutes}`;
+    },
+    async handleCloudSync() {
+      console.log('[SettingsPage] Starting cloud sync...');
+      prompt.showToast({ message: '正在从云端同步...' });
+      
+      try {
+        // 1. 先上传未同步的数据
+        const uploadSuccess = await UserService.triggerClickSync();
+        
+        if (!uploadSuccess) {
+          // 上传失败，保留未同步数据不变
+          console.log('[SettingsPage] Upload failed, keeping pending clicks unchanged');
+          prompt.showToast({ message: '上传失败，请稍后重试' });
+          return;
+        }
+        
+        // 2. 上传成功后，从服务器请求最新的点击次数
+        const userInfo = await UserService.ensureUserIsRegistered(true);
+        
+        if (userInfo && userInfo.total_clicks !== undefined) {
+          // 更新本地的总点击数
+          const _promisifiedStorageSet = (key, value) => new Promise((resolve, reject) => {
+            storage.set({ key, value, success: resolve, fail: (err, code) => reject(new Error(`Storage.set failed for key '${key}' with code ${code}: ${err}`)) });
+          });
+          
+          await _promisifiedStorageSet(CONFIG.STORAGE_KEYS.TOTAL_CLICKS, userInfo.total_clicks.toString());
+          console.log(`[SettingsPage] Updated total_clicks from server: ${userInfo.total_clicks}`);
+        }
+        
+        prompt.showToast({ message: '同步成功！' });
+        
+      } catch (error) {
+        console.error('[SettingsPage] Cloud sync failed:', error);
+        prompt.showToast({ message: '同步失败，发生错误' });
+      }
+    },
+    goBack() {
+      router.back();
+    },
+    goToAbout() {
+      router.push({
+        uri: 'about'
+      });
+    },
+    goToMoreOptions() {
+      router.push({
+        uri: 'more-options'
+      });
+    }
+  }
+</script>

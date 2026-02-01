@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "module": "system",
+    "target": "es2017",
+    "checkJs": false
+  },
+  "exclude": [
+    "node_modules"
+  ]
+}

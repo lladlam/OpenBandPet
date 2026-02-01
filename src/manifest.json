@@ -1,0 +1,85 @@
+{
+  "package": "com.lladlam.bandpet.9pro",
+  "name": "BandPet",
+  "versionName": "0.4.3",
+  "versionCode": 43,
+  "minPlatformVersion": 1000,
+  "icon": "/common/icon.png",
+  "deviceTypeList": [
+    "watch"
+  ],
+  "features": [
+    {
+      "name": "system.router"
+    },
+    {
+      "name": "system.device"
+    },
+    {
+      "name": "system.fetch"
+    },
+    {
+      "name": "system.storage"
+    },
+    {
+        "name": "system.vibrator"
+    }, 
+    {
+      "name": "system.prompt"
+    }
+  ],
+  "permissions": [
+    {
+      "name": "hapjs.permission.DEVICE_INFO"
+    }
+  ],
+  "config": {
+    "logLevel": "debug",
+    "designWidth": 336
+  },
+  "router": {
+    "entry": "main",
+    "pages": {
+      "main": {
+        "component": "index"
+      },
+      "more": {
+        "component": "index"
+      },
+      "leaderboard": {
+        "component": "index"
+      },
+      "exchange": {
+        "component": "index"
+      },
+      "market": {
+        "component": "index"
+      },
+      "customize": {
+        "component": "index"
+      },
+      "settings": {
+        "component": "index"
+      },
+      "about": {
+        "component": "index"
+      },
+      "announcement": {
+        "component": "index"
+      },
+      "announcement-detail": {
+        "component": "index"
+      },
+      "naming": {
+        "component": "index"
+      },
+      "more-options": {
+        "component": "index"
+      }
+    }
+  },
+  "display": {
+    "backgroundColor": "#000000",
+    "textColor": "#ffffff"
+  }
+}

@@ -1,0 +1,156 @@
+<template>
+  <stack class="page-container">
+    <!-- Main content container -->
+    <div style="width: 100%; height: 100%; flex-direction: column;">
+      <div class="page-header-container">
+        <div class="page-header">
+          <div class="header-title-time">
+            <text class="page-time-display">{{ time }}</text>
+            <text class="page-header-title">公告详情</text>
+          </div>
+        </div>
+      </div>
+
+      <!-- Page Specific Content -->
+      <scroll class="page-content" scroll-y="true">
+        <div class="detail-content">
+          <text class="detail-title">{{ title }}</text>
+          <text class="detail-date">{{ creation_date }}</text>
+          <div class="divider"></div>
+          <text class="detail-body">{{ body }}</text>
+        </div>
+      </scroll>
+    </div>
+    <!-- Back Button on top layer -->
+    <image src="../common/back.png" class="page-header-back-button" onclick="goBack" style="top: 5px;"></image>
+  </stack>
+</template>
+
+<style>
+  .page-container {
+    background-color: #000000;
+    width: 100%;
+    height: 100%;
+  }
+  .page-header-container {
+    width: 100%;
+    margin-bottom: 10px;
+    flex-shrink: 0;
+  }
+  .page-header {
+    width: 100%;
+    height: 90px;
+    padding: 0 20px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+  }
+  .page-header-back-button {
+    width: 80px;
+    height: 80px;
+    position: absolute;
+    left: 0px;
+  }
+  .header-title-time {
+    flex-direction: column;
+    align-items: center;
+  }
+  .page-time-display {
+    color: #FFFFFF;
+    font-size: 24px;
+    margin-bottom: 2px;
+  }
+  .page-header-title {
+    color: #FFFFFF;
+    font-size: 32px;
+  }
+  .page-content {
+    flex: 1;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+  }
+  .detail-content {
+    width: 90%;
+    flex-direction: column;
+  }
+  .detail-title {
+    color: #FFFFFF;
+    font-size: 32px;
+    margin-bottom: 15px;
+  }
+  .detail-date {
+    color: #AAAAAA;
+    font-size: 24px;
+    margin-bottom: 15px;
+  }
+  .divider {
+    width: 100%;
+    height: 1px;
+    background-color: #333;
+    margin-bottom: 15px;
+  }
+  .detail-body {
+    color: #E0E0E0;
+    font-size: 28px;
+    width: 100%;
+  }
+</style>
+
+<script>
+  import router from '@system.router';
+
+  export default {
+    // Per documentation, router params must be declared in 'protected'.
+    protected: {
+      announcement: {}
+    },
+    private: {
+      time: '00:00',
+      title: '',
+      body: '',
+      creation_date: ''
+    },
+    onInit() {
+      this.updateTime();
+      setInterval(this.updateTime, 10000);
+    },
+    onShow() {
+      // Logic moved to onShow, as router params are guaranteed to be available here.
+      // The parameter is passed as a JSON string, so it needs to be parsed.
+      let announcementData = this.announcement;
+      try {
+        // If it's a string, parse it. If it's already an object, this won't hurt.
+        if (typeof announcementData === 'string') {
+          announcementData = JSON.parse(announcementData);
+        }
+
+        if (announcementData && announcementData.title) {
+          this.title = announcementData.title;
+          this.body = announcementData.content;
+          this.creation_date = this.formatDate(announcementData.created_at);
+        } else {
+          throw new Error("Parsed data is invalid.");
+        }
+      } catch (e) {
+        this.title = "加载失败";
+        this.body = "未能加载公告内容，请返回重试。";
+        console.error("Announcement data not received or invalid. Raw data:", this.announcement, "Error:", e);
+      }
+    },
+    updateTime() {
+      const now = new Date();
+      const hours = now.getHours().toString().padStart(2, '0');
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      this.time = `${hours}:${minutes}`;
+    },
+    formatDate(dateString) {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+    },
+    goBack() {
+      router.back();
+    }
+  }
+</script>

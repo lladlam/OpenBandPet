@@ -1,0 +1,196 @@
+<template>
+  <stack class="page-container">
+    <!-- Main content container -->
+    <div style="width: 100%; height: 100%; flex-direction: column; align-items: center;">
+      <div class="page-header-container">
+        <div class="page-header">
+          <div class="header-title-time">
+            <text class="page-time-display">{{ time }}</text>
+            <text class="page-header-title">公告</text>
+          </div>
+        </div>
+      </div>
+      <div class="page-content">
+        <list class="announcement-list" if="{{ announcements.length > 0 }}">
+          <list-item for="{{announcements}}" class="list-item" type="default">
+            <div class="item-content">
+              <div class="text-content">
+                <text class="announcement-title">{{$item.title}}</text>
+                <text class="announcement-body">{{$item.content}}</text>
+              </div>
+              <!-- Alternative: "Details" button -->
+              <div class="detail-button-container">
+                <text class="detail-button" onclick="openDetail($idx)">查看详情</text>
+              </div>
+            </div>
+          </list-item>
+        </list>
+        <div class="status-container" if="{{ announcements.length === 0 && statusMessage }}">
+          <text class="status-text">{{ statusMessage }}</text>
+        </div>
+      </div>
+    </div>
+    <!-- Back Button on top layer for guaranteed clickability -->
+    <image src="../common/back.png" class="page-header-back-button" onclick="goBack" style="top: 5px;"></image>
+  </stack>
+</template>
+
+<style>
+  .page-container {
+    flex-direction: column;
+    align-items: center;
+    background-color: #000000;
+    width: 100%;
+    height: 100%;
+  }
+  .page-header-container {
+    width: 100%;
+    margin-bottom: 20px;
+    flex-shrink: 0; 
+  }
+  .page-time-display {
+    color: #FFFFFF;
+    font-size: 24px;
+    margin-bottom: 2px;
+  }
+  .page-header {
+    width: 100%;
+    height: 90px;
+    padding: 0 20px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .page-header-back-button {
+    width: 80px;
+    height: 80px;
+    position: absolute;
+    left: 0px;
+  }
+  .page-header-title {
+    color: #FFFFFF;
+    font-size: 32px;
+  }
+  .header-title-time {
+    flex-direction: column;
+    align-items: center;
+  }
+  .page-content {
+    flex-direction: column;
+    width: 100%;
+    flex: 1;
+    align-items: center;
+    overflow-y: scroll; 
+  }
+  .announcement-list {
+    width: 90%;
+    flex-grow: 1;
+  }
+  .list-item {
+    width: 100%;
+    height: 180px; /* Increased height for the button */
+    background-color: #1A1A1A;
+    border-radius: 15px;
+    margin-bottom: 10px;
+    padding: 15px 20px;
+  }
+  .item-content {
+    flex-direction: column;
+    justify-content: space-between; /* To push button to bottom */
+    width: 100%;
+    height: 100%;
+  }
+  .text-content {
+    flex-direction: column;
+  }
+  .announcement-title {
+    color: #FFFFFF;
+    font-size: 28px;
+    margin-bottom: 8px;
+  }
+  .announcement-body {
+    color: #AAAAAA;
+    font-size: 24px;
+    lines: 1; 
+    text-overflow: ellipsis;
+  }
+  .detail-button-container {
+    width: 100%;
+    flex-direction: row;
+    justify-content: flex-end; 
+    margin-top: 10px;
+  }
+  .detail-button {
+    color: #FFFFFF;
+    background-color: #26A69A;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 24px;
+  }
+  .status-container {
+    flex: 1;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+  .status-text {
+    color: #AAAAAA;
+    font-size: 28px;
+    text-align: center;
+  }
+</style>
+
+<script>
+  import router from '@system.router';
+  import ApiService from '../common/js/api-service.js';
+
+  export default {
+    data: {
+      time: '00:00',
+      announcements: [],
+      statusMessage: '正在加载...'
+    },
+    onInit() {
+      this.updateTime();
+      setInterval(this.updateTime, 10000);
+      this.fetchAnnouncements();
+    },
+    updateTime() {
+      const now = new Date();
+      const hours = now.getHours().toString().padStart(2, '0');
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      this.time = `${hours}:${minutes}`;
+    },
+    async fetchAnnouncements() {
+      console.log('[Announcement] Fetching announcements...');
+      const result = await ApiService.getAnnouncements(10);
+      
+      console.log('[Announcement] API Response:', JSON.stringify(result));
+
+      if (result.success && result.announcements && result.announcements.length > 0) {
+        this.announcements = result.announcements;
+        this.statusMessage = '';
+      } else if (result.success && (!result.announcements || result.announcements.length === 0)) {
+        this.statusMessage = '暂无公告';
+      } else {
+        console.error("[Announcement] Failed to fetch announcements:", result.error);
+        this.statusMessage = '无法加载公告，请稍后重试。';
+      }
+    },
+    openDetail(index) {
+      const announcement = this.announcements[index];
+      if (announcement) {
+        router.push({
+          uri: 'announcement-detail',
+          params: {
+            announcement: announcement
+          }
+        });
+      }
+    },
+    goBack() {
+      router.back();
+    }
+  }
+</script>

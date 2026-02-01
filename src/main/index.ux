@@ -1,0 +1,590 @@
+<template>
+  <div class="container">
+    <text class="time">{{ time }}</text>
+    
+    <div class="chest-row">
+      <div class="chest" onclick="claimChest(0, $event)">
+        <text class="chest-label">宝箱</text>
+        <text show="{{!chests[0].claimed}}" class="chest-cost">花费: 1000</text>
+        <text show="{{chests[0].claimed}}" class="chest-timer">{{ chests[0].timerDisplay }}</text>
+      </div>
+      <div class="chest" onclick="claimChest(1, $event)">
+        <text class="chest-label">宝箱</text>
+        <text show="{{!chests[1].claimed}}" class="chest-cost">花费: 1000</text>
+        <text show="{{chests[1].claimed}}" class="chest-timer">{{ chests[1].timerDisplay }}</text>
+      </div>
+    </div>
+
+    <div class="pet-container" onclick="incrementClick($event)">
+      <image class="pet-image" src="{{ petImage }}"></image>
+      <text class="pet-name">{{ petName }}</text>
+    </div>
+    
+    <div class="bottom-bar">
+      <image src="../common/more.png" class="more-button" onclick="openMore($event)"></image>
+      <div class="click-counter">
+        <text class="click-counter-text">{{ clickCount }}</text>
+      </div>
+    </div>
+    
+    <!-- 普通更新提醒弹窗 -->
+    <div class="update-overlay" show="{{showUpdateOverlay}}">
+      <div class="update-content">
+        <text class="update-title">{{updateInfo.title || '发现新版本'}}</text>
+        <text class="version-text">新版本: {{updateInfo.version_name}}</text>
+        
+        <div class="changelog-container">
+          <text class="changelog-title">更新内容:</text>
+          <scroll class="changelog-scroll">
+            <text class="changelog-text">{{updateInfo.changelog}}</text>
+          </scroll>
+        </div>
+        
+        <div class="button-container">
+          <div class="ignore-button" onclick="onIgnoreUpdate">
+            <text class="ignore-button-text">忽略此版本</text>
+          </div>
+          <div class="check-button" onclick="onKnowUpdate">
+            <text class="check-button-text">知道了</text>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style>
+  .container {
+    width: 100%;
+    height: 100%;
+    background-color: #000000;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0; /* Reduced padding */
+    overflow: hidden; /* Disable scrolling */
+  }
+  .time {
+    color: #FFFFFF;
+    font-size: 24px; /* Restored font size */
+    text-align: center;
+    width: 100%;
+  }
+  .chest-row {
+    width: 100%;
+    justify-content: space-around;
+    padding: 0 20px;
+  }
+  .chest {
+    width: 100px; /* Reduced size */
+    height: 100px; /* Reduced size */
+    background-color: #DAA520;
+    border-radius: 10.5px;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    padding: 7px;
+  }
+  .chest-label {
+    font-size: 26px; /* Slightly smaller to fit */
+    color: #000000;
+    margin-bottom: 5px;
+  }
+  .chest-cost {
+    color: #000000;
+    font-size: 15px;
+  }
+  .chest-timer {
+    color: #000000;
+    font-size: 15px;
+  }
+  .pet-container {
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin-top: 10px; /* Adjust margin */
+  }
+  .pet-image {
+    width: 200px; /* Slightly smaller to compensate space */
+    height: 200px;
+    object-fit: contain;
+  }
+  .pet-name {
+    color: #888888;
+    font-size: 28px;
+    margin-top: 15px;
+  }
+  .bottom-bar {
+    width: 100%;
+    justify-content: space-around;
+    align-items: center;
+  }
+  .more-button {
+    width: 56px;
+    height: 56px;
+  }
+  .click-counter {
+    width: 140px;
+    height: 56px;
+    border-radius: 28px;
+    background-color: #1A1A1A;
+    justify-content: center;
+    align-items: center;
+  }
+  .click-counter-text {
+    color: #FFFFFF;
+    font-size: 28px;
+  }
+  .update-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    z-index: 999;
+  }
+  
+  .update-content {
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #000000;
+    padding: 20px;
+    border-radius: 10px;
+  }
+  
+  .update-title {
+    font-size: 18px;
+    color: #FFFFFF;
+    margin-bottom: 10px;
+    text-align: center;
+    font-weight: bold;
+  }
+  
+  .version-text {
+    font-size: 14px;
+    color: #AAAAAA;
+    margin-bottom: 20px;
+  }
+  
+  .changelog-container {
+    width: 100%;
+    flex-direction: column;
+    margin-bottom: 20px;
+  }
+  
+  .changelog-title {
+    font-size: 16px;
+    color: #FFFFFF;
+    margin-bottom: 10px;
+    font-weight: bold;
+  }
+  
+  .changelog-scroll {
+    width: 100%;
+    height: 125px;
+    padding: 10px;
+    background-color: #1a1a1a;
+    border-radius: 10px;
+    margin-bottom: 10px;
+  }
+  
+  .changelog-text {
+    font-size: 14px;
+    color: #DDDDDD;
+    line-height: 20px;
+  }
+  
+  .button-container {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
+  
+  .ignore-button {
+    flex: 1;
+    height: 40px;
+    background-color: #555555;
+    border-radius: 20px;
+    justify-content: center;
+    align-items: center;
+    margin-right: 10px;
+  }
+  
+  .ignore-button-text {
+    font-size: 15px;
+    color: #FFFFFF;
+    font-weight: bold;
+  }
+  
+  .check-button {
+    flex: 1;
+    height: 40px;
+    background-color: #4CAF50;
+    border-radius: 20px;
+    justify-content: center;
+    align-items: center;
+    margin-left: 10px;
+  }
+  
+  .check-button-text {
+    font-size: 15px;
+    color: #FFFFFF;
+    font-weight: bold;
+  }
+</style>
+
+<script>
+  import router from '@system.router';
+  import storage from '@system.storage';
+  import prompt from '@system.prompt';
+  import vibrator from '@system.vibrator';
+  import UserService from '../common/js/userService.js';
+  import UpdateManager from '../common/js/update-manager.js';
+  import { CONFIG } from '../common/js/config.js';
+
+  const _promisifiedStorageGet = (key) => new Promise((resolve) => {
+    storage.get({ key, success: (data) => resolve(data), fail: () => resolve(null) });
+  });
+
+  const _promisifiedStorageSet = (key, value) => new Promise((resolve, reject) => {
+    storage.set({ key, value, success: resolve, fail: (err, code) => reject(new Error(`Storage.set failed for key '${key}' with code ${code}: ${err}`)) });
+  });
+
+  export default {
+    data: {
+      time: '00:00',
+      petName: '未命名',
+      clickCount: 0,
+      petImage: '/common/Ra0.png',
+      vibrationEnabled: true,
+      updateCheckInterval: null,
+      chests: [
+        { claimed: false, refreshTimestamp: 0, timerDisplay: '花费: 1000' },
+        { claimed: false, refreshTimestamp: 0, timerDisplay: '花费: 1000' }
+      ],
+      showUpdateOverlay: false,
+      updateInfo: {},
+    },
+
+    onInit() {
+      this.loadInitialState();
+      this.updateTime();
+      
+      // 点击同步定时器（30秒）- 改为从云端同步至本地的逻辑
+      setInterval(async () => {
+        await this.autoSyncFromCloud();
+      }, CONFIG.APP.SYNC_INTERVAL);
+      
+      // 时间更新定时器
+      setInterval(this.updateTime, 10000);
+      
+      // 宝箱冷却定时器
+      setInterval(this.updateChestTimers.bind(this), 1000);
+      
+      // 更新检查定时器（1小时）
+      this.updateCheckInterval = setInterval(() => {
+        this.checkForUpdates();
+      }, CONFIG.APP.CHECK_UPDATE_INTERVAL);
+      
+      console.log('[Main] Update check interval set to:', CONFIG.APP.CHECK_UPDATE_INTERVAL, 'ms');
+    },
+    
+    async onShow() {
+      // 每次显示页面时重新加载震动设置（用户可能在设置中更改了）
+      await this.loadVibrationSetting();
+      
+      // 立即检查更新（从强制更新页面返回时）
+      console.log('[Main] onShow - Immediate update check triggered');
+      await this.checkForUpdates();
+    },
+    
+    // 检查更新（定时调用）
+    async checkForUpdates() {
+      console.log('[Main] checkForUpdates called');
+      
+      try {
+        console.log('[Main] Periodic update check triggered...');
+        const result = await UpdateManager.checkUpdate(false);
+        
+        console.log('[Main] Update check result:', JSON.stringify(result));
+        
+        if (result.success && result.hasUpdate && !result.skipped) {
+          console.log('[Main] Update available:', result.updateInfo);
+          
+          // 保存更新信息到本地存储，供强制更新页面使用
+          try {
+            await UpdateManager.saveUpdateInfo(result.updateInfo);
+            console.log('[Main] Saved update info to storage:', JSON.stringify(result.updateInfo));
+          } catch (e) {
+            console.error('[Main] Failed to save update info:', e);
+          }
+          
+          // 如果是强制更新，跳转到强制更新页面
+          if (result.isForceUpdate) {
+            console.log('[Main] Force update detected, redirecting...');
+            router.replace({
+              uri: '/force-update',
+              params: {
+                updateInfo: result.updateInfo,
+                isForceUpdate: true
+              }
+            });
+          } else if (!result.ignored) {
+            // 非强制更新，跳转到普通更新页面
+            console.log('[Main] Normal update detected, redirecting to update page...');
+            router.push({
+              uri: '/update',
+              params: {
+                updateInfo: result.updateInfo,
+                isForceUpdate: false
+              }
+            });
+          }
+        } else if (result.skipped) {
+          console.log('[Main] Update check skipped (not time yet)');
+        } else if (!result.success) {
+          console.log('[Main] Update check failed:', result.error);
+        } else {
+          console.log('[Main] No update available');
+        }
+      } catch (error) {
+        console.error('[Main] Periodic update check failed:', error);
+        console.error('[Main] Update check error message:', error.message);
+        console.error('[Main] Update check error stack:', error.stack);
+      }
+    },
+    
+    // 用户点击"忽略此版本"
+    async onIgnoreUpdate() {
+      console.log('[Main] User clicked ignore update');
+      
+      if (this.updateInfo && this.updateInfo.version_code) {
+        try {
+          await UpdateManager.ignoreVersion(this.updateInfo.version_code);
+          console.log('[Main] Version ignored:', this.updateInfo.version_code);
+          prompt.showToast({
+            message: '已忽略此版本',
+            duration: 1500
+          });
+        } catch (e) {
+          console.error('[Main] Failed to ignore version:', e);
+        }
+      }
+      
+      // 隐藏更新弹窗
+      this.showUpdateOverlay = false;
+      this.updateInfo = {};
+    },
+    
+    // 用户点击"知道了"
+    async onKnowUpdate() {
+      console.log('[Main] User clicked know update');
+      
+      // 隐藏更新弹窗
+      this.showUpdateOverlay = false;
+      this.updateInfo = {};
+    },
+
+    async loadInitialState() {
+        const userInfo = await UserService.ensureUserIsRegistered();
+        
+        if (userInfo && userInfo.id) {
+            this.petName = userInfo.pet_name || '未命名';
+            
+            // 获取到服务器点击次数时，直接覆盖到本地点击次数
+            const serverClicks = userInfo.total_clicks || 0;
+            if (serverClicks > 0) {
+                await _promisifiedStorageSet(CONFIG.STORAGE_KEYS.TOTAL_CLICKS, serverClicks.toString());
+                console.log(`[State] Synced server clicks to local storage: ${serverClicks}`);
+            }
+        }
+
+        // 从本地存储读取总点击次数和待同步点击次数
+        const totalClicksStr = await _promisifiedStorageGet(CONFIG.STORAGE_KEYS.TOTAL_CLICKS);
+        const totalClicks = parseInt(totalClicksStr) || 0;
+        
+        const pendingClicksStr = await _promisifiedStorageGet(CONFIG.STORAGE_KEYS.PENDING_CLICKS);
+        const pendingClicks = parseInt(pendingClicksStr) || 0;
+
+        // 总显示点击数 = 本地总数 + 待同步数
+        this.clickCount = totalClicks + pendingClicks;
+        
+        console.log(`[State] Loaded state: Total clicks=${totalClicks}, Pending clicks=${pendingClicks}, Display clicks=${this.clickCount}`);
+        
+        await this.loadChestStates();
+        await this.loadVibrationSetting();
+    },
+
+    async loadVibrationSetting() {
+      try {
+        const setting = await _promisifiedStorageGet(CONFIG.STORAGE_KEYS.VIBRATION_ENABLED);
+        // 默认开启震动，只有明确设置为 'false' 时才关闭
+        this.vibrationEnabled = setting !== 'false';
+        console.log('[Main] Loaded vibration setting:', this.vibrationEnabled);
+      } catch (e) {
+        console.error('[Main] Failed to load vibration setting:', e);
+        this.vibrationEnabled = true;
+      }
+    },
+    
+    // 【新增】自动从云端同步至本地的逻辑
+    async autoSyncFromCloud() {
+      console.log('[Main] Starting auto sync from cloud...');
+      
+      try {
+        // 1. 先尝试上传未同步的数据
+        const uploadSuccess = await UserService.triggerClickSync();
+        
+        if (!uploadSuccess) {
+          // 上传失败，保留未同步数据不变
+          console.log('[Main] Upload failed, keeping pending clicks unchanged');
+          return;
+        }
+        
+        // 2. 上传成功后，从服务器请求最新的点击次数
+        const userInfo = await UserService.ensureUserIsRegistered(true);
+        
+        if (userInfo && userInfo.total_clicks !== undefined) {
+          // 更新本地的总点击数
+          const _promisifiedStorageSet = (key, value) => new Promise((resolve, reject) => {
+            storage.set({ key, value, success: resolve, fail: (err, code) => reject(new Error(`Storage.set failed for key '${key}' with code ${code}: ${err}`)) });
+          });
+          
+          await _promisifiedStorageSet(CONFIG.STORAGE_KEYS.TOTAL_CLICKS, userInfo.total_clicks.toString());
+          console.log(`[Main] Updated total_clicks from server: ${userInfo.total_clicks}`);
+        }
+        
+        // 3. 刷新UI显示
+        await this.refreshClickCount();
+        
+      } catch (error) {
+        console.error('[Main] Auto sync from cloud failed:', error);
+      }
+    },
+    
+    // 【新增】刷新显示的点击数
+    async refreshClickCount() {
+      try {
+        const totalClicksStr = await _promisifiedStorageGet(CONFIG.STORAGE_KEYS.TOTAL_CLICKS);
+        const totalClicks = parseInt(totalClicksStr) || 0;
+        
+        const pendingClicksStr = await _promisifiedStorageGet(CONFIG.STORAGE_KEYS.PENDING_CLICKS);
+        const pendingClicks = parseInt(pendingClicksStr) || 0;
+
+        this.clickCount = totalClicks + pendingClicks;
+        console.log(`[Main] Refreshed clickCount: ${totalClicks} + ${pendingClicks} = ${this.clickCount}`);
+      } catch (e) {
+        console.error('[Main] Failed to refresh click count:', e);
+      }
+    },
+
+    async loadChestStates() {
+      const chestData = await _promisifiedStorageGet('chestStates');
+      if (chestData) {
+        try {
+            const loadedChests = JSON.parse(chestData);
+            this.chests = loadedChests.map(chest => {
+              if (chest.refreshTimestamp > 0 && chest.claimed) {
+                const remainingTime = Math.max(0, chest.refreshTimestamp - Date.now());
+                if (remainingTime <= 0) {
+                  chest.claimed = false;
+                  chest.refreshTimestamp = 0;
+                }
+              }
+              return chest;
+            });
+        } catch(e) { console.error("Failed to parse chest states from storage", e); }
+      }
+    },
+
+    async saveChestStates() {
+      await _promisifiedStorageSet('chestStates', JSON.stringify(this.chests));
+    },
+
+    updateTime() {
+      const now = new Date();
+      const hours = now.getHours().toString().padStart(2, '0');
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      this.time = `${hours}:${minutes}`;
+    },
+
+    updateChestTimers() {
+      let needsSave = false;
+      this.chests.forEach((chest, index) => {
+        if (chest.claimed && chest.refreshTimestamp > 0) {
+          const remainingTime = Math.max(0, chest.refreshTimestamp - Date.now());
+          this.chests[index].timerDisplay = this.formatTime(remainingTime / 1000);
+          if (remainingTime <= 0) {
+            this.chests[index].claimed = false;
+            this.chests[index].refreshTimestamp = 0;
+            needsSave = true;
+          }
+        }
+      });
+      if (needsSave) this.saveChestStates();
+    },
+
+    formatTime(seconds) {
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = Math.floor(seconds % 60);
+      return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    },
+
+    async incrementClick(e) {
+        // This is the general click handler for the background/pet
+        this.clickCount++;
+        await UserService.updatePendingClicks(1);
+        
+        // 震动反馈
+        if (this.vibrationEnabled) {
+          vibrator.vibrate({
+            mode: 'short'
+          });
+        }
+        
+        this.petImage = Math.random() < 0.5 ? '/common/Ra1.png' : '/common/Ra2.png';
+        setTimeout(() => { this.petImage = '/common/Ra0.png'; }, 200);
+    },
+
+    async claimChest(index, e) {
+      const chest = this.chests[index];
+      if (chest.claimed) {
+        prompt.showToast({ message: '宝箱正在冷却中' });
+        return;
+      }
+      if (this.clickCount >= 1000) {
+        this.clickCount -= 1000;
+        await UserService.updatePendingClicks(-1000);
+        const reward = Math.floor(Math.random() * 1500) + 500;
+        this.clickCount += reward;
+        await UserService.updatePendingClicks(reward);
+        prompt.showToast({ message: `获得 ${reward} 点击!` });
+        this.chests[index].claimed = true;
+        this.chests[index].refreshTimestamp = Date.now() + (30 * 60 * 1000);
+        await this.saveChestStates();
+      } else {
+        prompt.showToast({ message: '点击次数不足' });
+      }
+    },
+
+    openMore(e) {
+      router.push({ uri: 'more' });
+    },
+    
+    onDestroy() {
+      // 清理更新检查定时器
+      if (this.updateCheckInterval) {
+        clearInterval(this.updateCheckInterval);
+        this.updateCheckInterval = null;
+      }
+    }
+  }
+</script>

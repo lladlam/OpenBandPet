@@ -1,0 +1,30 @@
+<script>
+  import UserService from './common/js/userService.js';
+  import BackInterceptor from './common/js/back-interceptor.js';
+
+  export default {
+    onCreate() {
+      console.log('[lifecycle] [app] onCreate - App is starting...');
+    },
+
+    onShow() {
+      console.log('[lifecycle] [app] onShow');
+    },
+
+    onHide() {
+      console.log('[lifecycle] [app] onHide - Triggering final click sync before exit.');
+      UserService.triggerClickSync();
+    },
+
+    onDestroy() {
+      console.log('[lifecycle] [app] onDestroy');
+      // 清理返回键拦截器，以防万一
+      BackInterceptor.restore();
+    },
+
+    onError(err) {
+      console.log(`[lifecycle] [app] onError errmsg: ${err.message}`);
+      console.log(`[lifecycle] [app] onError error stack: ${err.stack}`);
+    }
+  }
+</script>
