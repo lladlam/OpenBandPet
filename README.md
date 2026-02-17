@@ -1,3 +1,5 @@
+# 此OpenBandPet项目已废弃，要查看新源码请来到[lladlam/bandpet](github.com/lladlam/bandpet)
+
 # BandPet — 项目说明
 
 版本：2025-12-26  
